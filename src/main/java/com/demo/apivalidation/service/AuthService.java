@@ -5,15 +5,18 @@ import com.demo.apivalidation.dto.RegisterRequest;
 import com.demo.apivalidation.entity.User;
 import com.demo.apivalidation.repository.UserRepository;
 import com.demo.apivalidation.exception.BusinessException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public void register(RegisterRequest request) {
@@ -30,7 +33,7 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
     }
@@ -41,7 +44,7 @@ public class AuthService {
                 .findByUsername(request.getUsername())
                 .orElseThrow(() -> new BusinessException("username", "User không tồn tại"));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BusinessException("password", "Sai mật khẩu");
         }
     }
